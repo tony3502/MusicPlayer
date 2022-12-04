@@ -6,27 +6,68 @@ import {
     TouchableOpacity,
     Dimensions,
     Image,
+    FlatList,
+    Animated,
 } from 'react-native'
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import Slider from '@react-native-community/slider';
-import songs from '../model/Data';
+import songs from '../model/Data.js';
 
 const { width, height } = Dimensions.get('window');
 
 const MusicPlayer = () => {
-    return (
-        <SafeAreaView style={style.container}>
-            <View style={style.maincontainer}>
+
+    const [songIndex, setsongIndex] = useState(0);
+
+    const scrollX = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        scrollX.addListener(({ value }) => {
+            const index = Math.round(value / width);
+            setsongIndex(index);
+        });
+    }, [])
+
+    const renderSongs = ({ item, index }) => {
+        return (
+            <Animated.View style={style.mainImageWrapper}>
                 <View style={[style.imageWrapper, style.elevation]}>
                     <Image
-                        source={require('../assets/IMG_5689.jpeg')}
+                        source={item.artwork}
                         style={style.musicImage}
                     />
                 </View>
+            </Animated.View>
+        );
+    }
+
+    return (
+        <SafeAreaView style={style.container}>
+            <View style={style.maincontainer}>
+
+                <Animated.FlatList renderItem={renderSongs}
+                    data={songs}
+                    KeyExtractor={item => item.id}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    scrollEventThrottle={16}
+                    onScroll={Animated.event(
+                        [
+                            {
+                                nativeEvent: {
+                                    contentOffset: { x: scrollX }
+                                }
+                            }
+                        ],
+                        { useNativeDriver: true }
+                    )}
+                />
+
                 <View>
-                    <Text style={[style.songContent, style.songTitle]}>Some Title</Text>
-                    <Text style={[style.songContent, style.songArtist]}>Some Artist Name</Text>
+                    <Text style={[style.songContent, style.songTitle]}>{songs[songIndex].title}</Text>
+                    <Text style={[style.songContent, style.songArtist]}>{songs[songIndex].artist}</Text>
                 </View>
                 <View>
                     <Slider
@@ -103,6 +144,11 @@ const style = StyleSheet.create({
         justifyContent: 'space-between',
         width: '80%'
 
+    },
+    mainImageWrapper: {
+        width: width,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     imageWrapper: {
         width: 300,
